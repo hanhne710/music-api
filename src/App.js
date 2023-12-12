@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import LoginButton from './components/LoginButton';
+import LogoutButton from './components/LogoutButton';
+import SearchInput from './components/SearchInput';
+import SongList from './components/SongList';
 import axios from 'axios';
 
 function App() {
@@ -7,11 +10,10 @@ function App() {
   const REDIRECT_URI = 'http://localhost:3000';
   const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
   const RESPONSE_TYPE = 'token';
-
   const [token, setToken] = useState("");
   const [SearchKey, setSearchKey] = useState("");
-  const [artists, setArtists] = useState([]);
   const [songs, setSongs] = useState([]);
+
 
 
   useEffect(() => {
@@ -33,29 +35,6 @@ function App() {
     window.localStorage.removeItem("token");
   }
 
-  const searchArtists = async (e) => {
-    e.preventDefault()
-    const { data } = await axios.get("https://api.spotify.com/v1/search", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      params: {
-        q: SearchKey,
-        type: "artist"
-      }
-    })
-    setArtists(data.artists.items || []); // Ensure data.artists.items is an array
-  }
-
-  const renderArtists = () => {
-    return artists.map(artist => (
-      <div key={artist.id}>
-        {artist.images.length ? <img width={"100%"} src={artist.images[0].url} alt='' /> : <div>No images</div>}
-        {artist.name}
-      </div>
-    ));
-  }
-
   const searchSongs = async (e) => {
     e.preventDefault();
     const { data } = await axios.get("https://api.spotify.com/v1/search", {
@@ -64,37 +43,27 @@ function App() {
       },
       params: {
         q: SearchKey,
-        type: "track" // Set type to "track" for searching songs
+        type: "track" //
       }
     });
-    setSongs(data.tracks.items || []); // Ensure data.tracks.items is an array
-  };
-  const renderSongs = () => {
-    return songs.map(song => (
-      <div key={song.id}>
-        {song.album.images.length ? <img width={"100%"} src={song.album.images[0].url} alt='' /> : <div>No images</div>}
-        {song.name} - {song.artists.map(artist => artist.name).join(', ')}
-      </div>
-    ));
+    setSongs(data.tracks.items || []);
   };
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>MUSIC API</h1>
-        {!token ?
-          <a href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}`}>Login</a>
-          :
-          <button onClick={logout}>Logout</button>
-        }
-        {token ?
-          <form onSubmit={searchSongs}>
-            <input type="text" onChange={e => setSearchKey(e.target.value)} />
-            <button type='submit'>Search</button>
-          </form>
-          :
-          <h1>Hãy đăng nhập</h1>}
-        {renderSongs()}
+        {!token ? (
+          <LoginButton authEndpoint={AUTH_ENDPOINT} clientId={CLIENT_ID} redirectUri={REDIRECT_URI} responseType={RESPONSE_TYPE} />
+        ) : (
+          <LogoutButton onLogout={logout} />
+        )}
+        {token ? (
+          <SearchInput onChange={(e) => setSearchKey(e.target.value)} onSubmit={searchSongs} placeholder="Search Songs" />
+        ) : (
+          <h1>Hãy đăng nhập</h1>
+        )}
+        {token && <SongList songs={songs} />}
       </header>
     </div>
   );
